@@ -318,7 +318,7 @@ function Part1(data) {
 					basicVar: data.basicVar
 				}) //cbtemp
 				// console.log({matrix:transform, cb:cb, cj:data.cj})
-				Part1.prototype.iteration({
+				return Part1.prototype.iteration({
 					matrix: transform,
 					cb: cb.cb,
 					basicVar: cb.basicVar,
