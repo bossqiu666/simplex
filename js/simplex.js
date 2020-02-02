@@ -1,7 +1,7 @@
 let data = [
 	[true, -3, 0, 1],
 	[
-		[-1, 4], 1, 1, 1,
+		[-1, 4], 1, 1, 1
 	],
 	[
 		[1, 1], -2, 1, -1
@@ -12,20 +12,7 @@ let data = [
 ]
 
 class Init {
-	constructor() {
-		this.data = [
-			[true, -3, 0, 1],
-			[
-				[-1, 4], 1, 1, 1
-			],
-			[
-				[1, 1], -2, 1, -1
-			],
-			[
-				[0, 9], 0, 3, 1
-			]
-		]
-	}
+	constructor() {}
 	//标准形
 	stantard(data) {
 		let copy = JSON.parse(JSON.stringify(data))
@@ -64,7 +51,6 @@ class Init {
 					break;
 			}
 		}
-		// console.log(copy)
 		return {
 			data: copy,
 			max: index
@@ -194,15 +180,12 @@ class Conversion {
 			sigma = cj[i] - temp
 			sigmaArr[i] = JSON.parse(JSON.stringify(sigma))
 		}
-		// console.log(sigmaArr)
 
 		let maxSigma = 0,
 			column
 		for (var i = 1; i < sigmaArr.length; i++) {
 			(maxSigma < sigmaArr[i]) && ((maxSigma = sigmaArr[i]) && (column = i))
 		}
-		// console.log(JSON.parse(JSON.stringify(sigmaArr)))
-		// console.log(maxSigma,column)
 		return {
 			matrix: copy,
 			column: column,
@@ -226,12 +209,15 @@ class Conversion {
 				minThet = thetArr[0]
 				row = 0
 			} else {
-				(thetArr[i] != null && thetArr[i] <= minThet) && ((minThet = thetArr[i]) && (row = i))
+				if (minThet == null) {
+					minThet = thetArr[i]
+					row = i
+				} else {
+					(thetArr[i] != null && thetArr[i] <= minThet) && ((minThet = thetArr[i]) && (row = i))
+				}
 			}
 		}
 
-		// console.log(JSON.parse(JSON.stringify(thetArr)))
-		// console.log(minThet,row)
 		return {
 			matrix: matrix,
 			row: row,
@@ -241,7 +227,6 @@ class Conversion {
 	}
 	//矩阵变换
 	transform(data) {
-		// console.log(matrix, row, column)
 		let matrix = data.matrix
 		let row = data.row
 		let column = data.column
@@ -270,7 +255,6 @@ class Conversion {
 				matrix2[i] = JSON.parse(JSON.stringify(tempRow))
 			}
 		}
-		// console.log(JSON.parse(JSON.stringify(matrix2)))
 		return matrix2;
 	}
 	//换基变量cb
@@ -289,16 +273,90 @@ class Conversion {
 	}
 }
 
-function Part1(data) {
+function Part1(raw) {
 	let init = new Init
 	let con = new Conversion
 	//标准形
-	let stantard = init.stantard(data) //{data: copy,max: index}
+	let stantard = init.stantard(raw) //{data: copy,max: index}
 	//加入人工变量
 	let artificial = init.artificial(stantard) //{data: copy,basicVar: basicVar,artificial: artificial,max: max}
 	//创建单纯形表
-	this.create = init.createTable(artificial) //{matrix: matrix,cj: cj,cb: cb,basicVar: basicVar}
-	Part1.prototype.iteration = function(data) { //迭代
+	let create = init.createTable(artificial) //{matrix: matrix,cj: cj,cb: cb,basicVar: basicVar}
+	Part1.prototype.iteration = function(arg) { //递归
+		let data = arg || create
+		//计算检验数sigma并且判断是否结束
+		let sigma = con.countSigma(data) //{matrix: copy,column: column,maxSigma: maxSigma}
+		if (sigma.maxSigma > 0) {
+			//计算thet
+			let thet = con.countThet(sigma) //{matrix: matrix,row: row,column: column,minThet: minThet}
+			if (thet.minThet < 0) {
+				console.log('无界解,计算结束!')
+			} else if (thet.minThet >= 0) {
+				//矩阵变换
+				let transform = con.transform(thet) //matrix2
+				let cb = con.exchangeCb({
+					row: thet.row,
+					column: thet.column,
+					cb: data.cb,
+					cj: data.cj,
+					basicVar: data.basicVar
+				}) //cbtemp
+				return Part1.prototype.iteration({
+					matrix: transform,
+					cb: cb.cb,
+					basicVar: cb.basicVar,
+					cj: data.cj
+				})
+			}
+		} else {
+			//计算结束,返回矩阵,解的情况
+			// console.log('最优解,计算结束!', data.matrix)
+			return {
+				data: raw,
+				matrix: data.matrix,
+				arti: artificial.artificial,
+				basicVar: data.basicVar
+			}
+		}
+	};
+}
+
+function Part2(raw) { //{data,matrix,basicVar,arti}
+	let copy = JSON.parse(JSON.stringify(raw.data))
+	let matrix = JSON.parse(JSON.stringify(raw.matrix))
+	let basicVar = raw.basicVar
+	let artificial = raw.arti
+	//去掉人工变量列
+	for (var i = 0; i < matrix.length; i++) {
+		for (var j = artificial.length - 1; j > -1; j--) {
+			matrix[i].splice(artificial[j], 1)
+		}
+
+	}
+	//目标函数处理,生成cj
+	if (!copy[0][0]) {
+		for (var i = 1; i < copy[0].length; i++) {
+			copy[0][i] = -copy[0][i]
+		}
+	}
+	let cj = []
+	for (var i = 0; i < matrix[0].length; i++) {
+		cj[i] = copy[0][i] || 0
+	}
+	//cb处理
+	let cb = []
+	for (var i = 0; i < basicVar.length; i++) {
+		cb[i] = copy[0][basicVar[i][1]] || 0
+	}
+	let rawobj = {
+		matrix: matrix,
+		cb: cb,
+		basicVar: basicVar,
+		cj: cj
+	}
+	let con = new Conversion
+	Part2.prototype.iteration = function(arg) { //递归
+		let data = arg || rawobj
 		// console.log('data:', data)
 		//计算检验数sigma并且判断是否结束
 		let sigma = con.countSigma(data) //{matrix: copy,column: column,maxSigma: maxSigma}
@@ -317,8 +375,7 @@ function Part1(data) {
 					cj: data.cj,
 					basicVar: data.basicVar
 				}) //cbtemp
-				// console.log({matrix:transform, cb:cb, cj:data.cj})
-				return Part1.prototype.iteration({
+				return Part2.prototype.iteration({
 					matrix: transform,
 					cb: cb.cb,
 					basicVar: cb.basicVar,
@@ -326,45 +383,17 @@ function Part1(data) {
 				})
 			}
 		} else {
+			//计算结束,返回矩阵,解的情况
+			console.log('最优解,计算结束!', data.matrix, data.basicVar)
 			return {
 				matrix: data.matrix,
-				cb: data.cb,
-				cj: data.cj,
 				basicVar: data.basicVar
 			}
-			console.log('最优解,计算结束!')
-			console.log({
-				matrix: data.matrix,
-				cb: data.cb,
-				cj: data.cj,
-				basicVar: data.basicVar
-			})
-			//计算结束,返回矩阵,解的情况
 		}
-	};
-}
-
-function Part2(data) { //{data,matrix,cj,basicVar}
-	let copy = JSON.parse(JSON.stringify(data.data))
-	//目标函数处理
-	if (!copy[0][0]) {
-		for (var i = 1; i < copy[0].length; i++) {
-			copy[0][i] = -copy[0][i]
-		}
-	}
-	//cb处理
-	let cb = []
-	for (var i = 0; i < data.basicVar.length; i++) {
-		cb[i] = copy[0][data.basicVar[i][1]]
-	}
-	console.log(cb)
-	this.init = function() {
-
 	}
 }
 
+//主进程
 let part1 = new Part1(data)
-// let result = part1.iteration(part1.create)
-// console.log(part1.test(part1.create))
-// Part2(result)
-console.log(part1.iteration(part1.create))
+let part2 = new Part2(part1.iteration())
+part2.iteration()
