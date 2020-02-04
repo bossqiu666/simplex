@@ -383,11 +383,30 @@ function Part2(raw) { //{data,matrix,basicVar,arti}
 				})
 			}
 		} else {
+			//计算目标函数值
+			let result = 0,
+				addNum = 0
+			for (var i = 1; i < data.cj.length; i++) {
+				if (data.cj[i] != 0) {
+					for (var j = 0; j < data.basicVar.length; j++) {
+						if (i != data.basicVar[j][1]) {
+							addNum = 0
+						} else {
+							addNum = data.matrix[j][0] * data.cj[i]
+						}
+						result += addNum
+					}
+				}
+			}
+			if (!data.cj[0]) {
+				result = -result
+			}
 			//计算结束,返回矩阵,解的情况
-			console.log('最优解,计算结束!', data.matrix, data.basicVar)
+			console.log('最优解,计算结束!', data.matrix, data.basicVar, data.cj, '最值:', result)
 			return {
 				matrix: data.matrix,
-				basicVar: data.basicVar
+				basicVar: data.basicVar,
+				result: result
 			}
 		}
 	}
