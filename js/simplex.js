@@ -383,6 +383,12 @@ function Part2(raw) { //{data,matrix,basicVar,arti}
 				})
 			}
 		} else {
+			//矩阵四舍五入,4为有效数字
+			for (var i = 0; i < data.matrix.length; i++) {
+				for (var j = 0; j < data.matrix[i].length; j++) {
+					data.matrix[i][j] = Number(data.matrix[i][j].toFixed(4))
+				}
+			}
 			//计算目标函数值
 			let result = 0,
 				addNum = 0
@@ -392,9 +398,9 @@ function Part2(raw) { //{data,matrix,basicVar,arti}
 						if (i != data.basicVar[j][1]) {
 							addNum = 0
 						} else {
-							addNum = data.matrix[j][0] * data.cj[i]
+							addNum = accMul(data.matrix[j][0], data.cj[i])
 						}
-						result += addNum
+						result = accAdd(result, addNum)
 					}
 				}
 			}
